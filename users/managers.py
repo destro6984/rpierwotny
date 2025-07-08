@@ -12,10 +12,6 @@ from django.db.models import (
     F,
 )
 from django.db import models
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from users.models import User, Client
 
 
 class ClientQuerySet(models.QuerySet):
@@ -33,15 +29,32 @@ class ClientQuerySet(models.QuerySet):
     def exclude_duplicated_phones(self):
         return self.exclude(phone__in=self._get_duplicate_phones())
 
+    def annotate_conflict_users(self):
+        from users.models import User
+
+        return (
+            self.exclude_duplicated_phones()
+            .annotate(
+                user_same_phone_different_email=Exists(
+                    User.objects.filter(phone=OuterRef("phone")).exclude(
+                        email=OuterRef("email")
+                    )
+                )
+            )
+            .filter(user_same_phone_different_email=True)
+        )
+
 
 class SubscriberQuerySet(models.QuerySet):
 
     def annotate_data_to_create_users(self):
+        from users.models import User, Client
+
         return self.annotate(
             user_same=Exists(User.objects.filter(email=OuterRef("email"))),
             client_same=Exists(Client.objects.filter(email=OuterRef("email"))),
             user_same_phone_email_different_client=Exists(
-                Client.get_conflict_users().filter(email=OuterRef("email"))
+                Client.objects.annotate_conflict_users().filter(email=OuterRef("email"))
             ),
             client_phone=Subquery(
                 Client.objects.exclude_duplicated_phones()
@@ -58,6 +71,8 @@ class SubscriberQuerySet(models.QuerySet):
         )
 
     def annotate_data_to_migrate_gdpr(self):
+        from users.models import User
+
         return self.annotate(
             user_id=Subquery(
                 User.objects.filter(email=OuterRef("email")).values("id")[:1]
@@ -75,12 +90,15 @@ class SubscriberQuerySet(models.QuerySet):
 
 
 class SubscriberSMSQuerySet(models.QuerySet):
+
     def annotate_data_to_create_users(self):
+        from users.models import Client, User
+
         return self.annotate(
             user_same=Exists(User.objects.filter(phone=OuterRef("phone"))),
             client_same=Exists(Client.objects.filter(phone=OuterRef("phone"))),
             user_same_phone_email_different_client=Exists(
-                Client.get_conflict_users().filter(phone=OuterRef("phone"))
+                Client.objects.annotate_conflict_users().filter(phone=OuterRef("phone"))
             ),
             client_phone=Subquery(
                 Client.objects.exclude_duplicated_phones()
@@ -97,6 +115,8 @@ class SubscriberSMSQuerySet(models.QuerySet):
         )
 
     def annotate_data_to_migrate_gdpr(self):
+        from users.models import User
+
         return self.annotate(
             user_id=Subquery(
                 User.objects.filter(phone=OuterRef("phone")).values("id")[:1]

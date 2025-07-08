@@ -1,13 +1,7 @@
 import csv
 
 from django.db import models
-from django.db.models import (
-    QuerySet,
-    OuterRef,
-    Exists,
-    Subquery,
-    CharField,
-)
+from django.db.models import QuerySet
 
 from users.managers import ClientQuerySet, SubscriberSMSQuerySet, SubscriberQuerySet
 
@@ -38,29 +32,6 @@ class Subscriber(BaseModel):
     def __str__(self):
         return f"Subscriber: {self.email}"
 
-    @classmethod
-    def data_to_create_user(cls):
-        qs = cls.objects.annotate(
-            user_same=Exists(User.objects.filter(email=OuterRef("email"))),
-            client_same=Exists(Client.objects.filter(email=OuterRef("email"))),
-            user_same_phone_email_different_client=Exists(
-                Client.get_conflict_users().filter(email=OuterRef("email"))
-            ),
-            client_phone=Subquery(
-                Client.objects.exclude_duplicated_phones()
-                .filter(email=OuterRef("email"))
-                .values("phone"),
-                output_field=CharField(),
-            ),
-            client_email=Subquery(
-                Client.objects.exclude_duplicated_phones()
-                .filter(email=OuterRef("email"))
-                .values("email"),
-                output_field=CharField(),
-            ),
-        )
-        return qs
-
 
 class SubscriberSMS(BaseModel):
     phone = models.CharField(max_length=10, unique=True)
@@ -71,29 +42,6 @@ class SubscriberSMS(BaseModel):
     def __str__(self):
         return f"SubscriberSMS: {self.phone}"
 
-    @classmethod
-    def data_to_create_user(cls):
-        qs = cls.objects.annotate(
-            user_same=Exists(User.objects.filter(phone=OuterRef("phone"))),
-            client_same=Exists(Client.objects.filter(phone=OuterRef("phone"))),
-            user_same_phone_email_different_client=Exists(
-                Client.get_conflict_users().filter(phone=OuterRef("phone"))
-            ),
-            client_phone=Subquery(
-                Client.objects.exclude_duplicated_phones()
-                .filter(phone=OuterRef("phone"))
-                .values("phone"),
-                output_field=CharField(),
-            ),
-            client_email=Subquery(
-                Client.objects.exclude_duplicated_phones()
-                .filter(phone=OuterRef("phone"))
-                .values("email"),
-                output_field=CharField(),
-            ),
-        )
-        return qs
-
 
 class Client(BaseModel):
     email = models.EmailField(unique=True)
@@ -103,21 +51,6 @@ class Client(BaseModel):
 
     def __str__(self):
         return f"Client: {self.email}"
-
-    @classmethod
-    def get_conflict_users(cls):
-        # better on custom QS or manager
-        return (
-            Client.objects.exclude_duplicated_phones()
-            .annotate(
-                user_same_phone_different_email=Exists(
-                    User.objects.filter(phone=OuterRef("phone")).exclude(
-                        email=OuterRef("email")
-                    )
-                )
-            )
-            .filter(user_same_phone_different_email=True)
-        )
 
 
 class User(BaseModel):

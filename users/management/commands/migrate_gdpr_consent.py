@@ -15,7 +15,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # Annotate Subscribers with related User info
         subscribers = (
-            Subscriber.data_to_create_user()
+            Subscriber.objects.annotate_data_to_create_users()
             .filter(user_same=True)
             .annotate_data_to_migrate_gdpr()
             .filter(is_subscriber_newer=True)
@@ -23,7 +23,7 @@ class Command(BaseCommand):
 
         # Annotate SubscriberSMS with related User info
         sms_subscribers = (
-            SubscriberSMS.data_to_create_user()
+            SubscriberSMS.objects.annotate_data_to_create_users()
             .filter(user_same=True)
             .annotate_data_to_migrate_gdpr()
             .filter(is_sms_newer=True)
