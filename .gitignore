@@ -76,3 +76,5 @@ staticfiles/
 
 # Editor-based Rest Client
 .idea/httpRequests
+
+scripts/test_script.py
