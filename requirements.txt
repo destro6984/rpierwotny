@@ -1,0 +1,5 @@
+Django==5.2.4
+pre_commit==4.2.0
+Faker==37.4.0
+djangorestframework ==3.16.0
+django-extensions ==4.1
