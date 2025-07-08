@@ -52,7 +52,11 @@ class SubscriberQuerySet(models.QuerySet):
 
         return self.annotate(
             user_same=Exists(User.objects.filter(email=OuterRef("email"))),
-            client_same=Exists(Client.objects.filter(email=OuterRef("email"))),
+            client_same=Exists(
+                Client.objects.exclude_duplicated_phones().filter(
+                    email=OuterRef("email")
+                )
+            ),
             user_same_phone_email_different_client=Exists(
                 Client.objects.annotate_conflict_users().filter(email=OuterRef("email"))
             ),
@@ -96,7 +100,11 @@ class SubscriberSMSQuerySet(models.QuerySet):
 
         return self.annotate(
             user_same=Exists(User.objects.filter(phone=OuterRef("phone"))),
-            client_same=Exists(Client.objects.filter(phone=OuterRef("phone"))),
+            client_same=Exists(
+                Client.objects.exclude_duplicated_phones().filter(
+                    phone=OuterRef("phone")
+                )
+            ),
             user_same_phone_email_different_client=Exists(
                 Client.objects.annotate_conflict_users().filter(phone=OuterRef("phone"))
             ),
