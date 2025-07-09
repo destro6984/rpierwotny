@@ -1,11 +1,9 @@
 from django.apps import apps
 from django.core.management.base import BaseCommand
 
-from users.models import Subscriber
-
 
 class Command(BaseCommand):
-    help = "Generate csv from Queryset"
+    help = "Generate csv from Queryset of conflicting users"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -31,7 +29,7 @@ class Command(BaseCommand):
         )
         csv_path = (
             "./subscribers_conflicts.csv"
-            if isinstance(model, Subscriber)
+            if model.__name__ == "Subscriber"
             else "./subscriberssms_conflicts.csv"
         )
         model.dump_queryset_to_csv(qs, csv_path)

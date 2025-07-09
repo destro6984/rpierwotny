@@ -7,7 +7,7 @@ from django.test import TestCase
 from users.models import User, Subscriber, Client, SubscriberSMS
 
 
-class SubscriberMigrationTests(TestCase):
+class SubscriberMigrationTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         pass
@@ -65,7 +65,7 @@ class SubscriberMigrationTests(TestCase):
         self.assertEqual(User.objects.get(email="test").phone, "")
 
 
-class SubscriberSMSMigrationTests(TestCase):
+class SubscriberSMSMigrationTest(TestCase):
 
     def test_user_same_phone_as_subscribersms(self):
         User.objects.create(email="test", phone="1", gdpr_consent=1)
@@ -83,7 +83,7 @@ class SubscriberSMSMigrationTests(TestCase):
 
         self.assertEqual(User.objects.count(), 2)
 
-    def test_client_same_email_subscriber_no_user_same_phone_client_and_email_diff_client(
+    def test_client_same_email_subscribersms_no_user_same_phone_client_and_email_diff_client(
         self,
     ):
         User.objects.create(email="test1", phone="1", gdpr_consent=1)
@@ -120,7 +120,7 @@ class SubscriberSMSMigrationTests(TestCase):
         self.assertEqual(User.objects.get(phone="12").email, "")
 
 
-class SubscribersGDPRMigrationTests(TestCase):
+class SubscribersGDPRMigrationTest(TestCase):
     def test_user_no_same_phone_as_subscribersms(self):
         User.objects.create(email="test", phone="1", gdpr_consent=0)
         SubscriberSMS.objects.create(phone="2", gdpr_consent=1)
@@ -157,3 +157,13 @@ class SubscribersGDPRMigrationTests(TestCase):
         call_command("migrate_gdpr_consent")
 
         self.assertEqual(User.objects.get(email="test").gdpr_consent, True)
+
+
+class ClientQuerySetTest(TestCase):
+    def test_should_return_phone_duplicates(self):
+        Client.objects.create(email="test1", phone="1")
+        Client.objects.create(email="test2", phone="1")
+        Client.objects.create(email="test3", phone="1")
+
+        duplicates = Client.objects.duplicated_phones()
+        self.assertEqual(duplicates.count(), 3)

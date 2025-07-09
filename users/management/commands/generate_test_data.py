@@ -26,7 +26,6 @@ class Command(BaseCommand):
         # Randomly sample unique emails/phones for each model
         subscriber_emails = random.sample(shared_emails, count)
         client_emails = random.sample(shared_emails, count)
-        # This allows overlap, but ensures uniqueness within each model
 
         # Subscriber
         for email in subscriber_emails:

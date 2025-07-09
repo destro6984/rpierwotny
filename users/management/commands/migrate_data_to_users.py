@@ -6,7 +6,7 @@ from users.models import User
 
 
 class Command(BaseCommand):
-    help = "Migrates data to Users"
+    help = "Migrates data to Users from Subscriber/SubscriberSMS"
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -61,7 +61,5 @@ class Command(BaseCommand):
             failed += 1
 
         self.stdout.write(
-            f"Data migrated successfully to "
-            f"Users model :{len(data_to_create_users)}, "
-            f"failed :{failed}"
+            f"Data migrated : failed {failed} " f"out of {len(qs_to_create_users)} "
         )
